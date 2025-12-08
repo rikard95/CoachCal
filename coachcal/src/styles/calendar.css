@@ -1,0 +1,156 @@
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #f8f9fa;
+  color: #333;
+}
+
+.calendar-wrapper {
+  background: #fff;
+  padding: 8px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  overflow-x: hidden;
+}
+
+
+.fc-toolbar {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.fc-toolbar-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #0d6efd;
+}
+
+.fc-button {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  min-width: 60px;
+  height: 32px;
+  border-radius: 6px;
+  background-color: #0d6efd;
+  border: none;
+  color: #fff;
+  transition: 0.2s;
+}
+
+.fc-button:hover {
+  background-color: #0b5ed7;
+}
+
+
+.fc-daygrid-day-frame {
+  min-height: 50px !important;
+  padding: 2px !important;
+}
+
+.fc-daygrid-event {
+  font-size: 0.6rem !important;
+  padding: 1px 2px !important;
+  line-height: 1.1;
+  white-space: normal !important;
+  word-break: break-word !important;
+}
+
+
+.fc-timegrid-event {
+  font-size: 0.55rem !important;
+  padding: 2px 4px !important;
+  line-height: 1.1;
+  white-space: normal !important;
+  word-break: break-word !important;
+}
+
+
+.fc-timegrid-body {
+  overflow-x: auto !important;
+}
+
+.fc-timegrid-cols {
+  display: flex !important;
+  gap: 4px !important;
+  min-width: max-content !important;
+}
+
+.fc-timegrid-col {
+  min-width: 120px;
+  position: relative;
+}
+
+
+.fc-timegrid-event {
+  display: block !important;
+  position: absolute !important;
+}
+
+
+@media (max-width: 768px) {
+
+  .fc-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fc-toolbar-title {
+    font-size: 1rem;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  /* Month-view */
+  .fc-daygrid-day-frame {
+    min-height: 60px !important;
+  }
+
+  .fc-daygrid-event {
+    font-size: 0.55rem !important;
+    padding: 1px !important;
+    display: block !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+
+  /* Week-view */
+  .fc-timegrid-cols {
+    gap: 2px !important;
+  }
+
+  .fc-timegrid-col {
+    min-width: 100px !important;
+  }
+
+  .fc-timegrid-event {
+    font-size: 0.5rem !important;
+    padding: 1px 2px !important;
+  }
+}
+
+@media (max-width: 480px) {
+
+  .fc-toolbar-title {
+    font-size: 0.9rem;
+  }
+
+  .fc-daygrid-day-frame {
+    min-height: 50px !important;
+  }
+
+  .fc-daygrid-event {
+    font-size: 0.5rem !important;
+  }
+
+  .fc-timegrid-col {
+    min-width: 80px !important;
+  }
+
+  .fc-timegrid-event {
+    font-size: 0.45rem !important;
+    min-width: 70px !important;
+    padding: 1px !important;
+  }
+}

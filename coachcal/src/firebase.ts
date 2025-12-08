@@ -19,5 +19,5 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 
-// Analytics only works in the browser, not on SSR/dev server
+
 export const analytics = await isSupported().then((yes) => (yes ? getAnalytics(app) : null));

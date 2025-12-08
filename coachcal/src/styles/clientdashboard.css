@@ -1,0 +1,54 @@
+
+.coach-calendar-wrapper {
+  overflow-x: auto;
+}
+
+.coach-list-scroll {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 0.5rem;
+}
+
+.booking-item {
+  cursor: pointer;
+}
+
+.booking-item:hover {
+  background-color: #f0f0f0;
+}
+
+.event-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 2px;
+}
+
+.event-accepted { color: green !important; }
+.event-declined { color: red !important; }
+.event-pending { color: lightblue !important; }
+.event-default { color: blue !important; }
+
+.view-dayGridMonth { font-size: 0.65rem; }
+.view-timeGridWeek { font-size: 0.75rem; }
+.view-timeGridDay { font-size: 0.85rem; }
+
+.event-title {
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.event-time {
+  line-height: 1;
+}
+
+.user-email {
+  max-width: 260px;
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
