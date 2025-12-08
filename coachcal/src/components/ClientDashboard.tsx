@@ -201,7 +201,7 @@ export default function ClientDashboard() {
         <Col xs={12} md="auto" className="d-flex justify-content-center justify-content-md-end">
           <div className="d-flex gap-2 align-items-center flex-wrap justify-content-center">
             <span className="fw-semibold text-truncate user-email">{currentUserEmail}</span>
-            <Button variant="danger" onClick={handleLogout}>Logga ut</Button>
+            <Button variant="danger" onClick={handleLogout}>Log out</Button>
           </div>
         </Col>
       </Row>

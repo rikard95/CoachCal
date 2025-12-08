@@ -198,7 +198,7 @@ export default function CoachDashboard() {
               {auth.currentUser?.email || "No user"}
             </span>
             <Button variant="danger" onClick={handleLogout}>
-              Logga ut
+              Log out
             </Button>
           </div>
         </Col>
