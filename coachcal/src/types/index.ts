@@ -42,7 +42,7 @@ export interface CalendarEvent {
   start: string;
   end?: string;
   extendedProps: {
-    /* description: string; */
+    description: string;
     bookings: Booking[];
   };
 }

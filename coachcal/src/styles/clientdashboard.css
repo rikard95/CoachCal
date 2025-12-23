@@ -28,10 +28,30 @@
   padding: 0 2px;
 }
 
-.event-accepted { color: green !important; }
-.event-declined { color: red !important; }
-.event-pending { color: lightblue !important; }
-.event-default { color: blue !important; }
+.badge-status-accepted {
+  background-color: #15ff0092 !important;
+  color: black !important;
+}
+
+.badge-status-declined {
+  background-color: #f7000080 !important;
+  color: black !important;
+}
+
+.badge-status-pending {
+  background-color: #ffc40098 !important;
+  color: black !important;
+} 
+
+.badge-status-default {
+  background-color: #0088ffa8 !important;
+  color: black !important;
+}
+
+.event-accepted { color: black !important; padding: 5px; background-color: #15ff0092; width: 100%; border-radius: 5px; align-items: center; }
+.event-declined { color: black !important; padding: 5px;background-color:  #f7000080; width: 100%; border-radius: 5px; align-items: center; }
+.event-pending { color: black !important; padding: 5px; background-color:  #ffc40098; width: 100%; border-radius: 5px; align-items: center; }
+.event-default { color: black !important; padding: 5px; background-color:  #007bff;   width: 100%; border-radius: 5px; align-items: center; }
 
 .view-dayGridMonth { font-size: 0.65rem; }
 .view-timeGridWeek { font-size: 0.75rem; }

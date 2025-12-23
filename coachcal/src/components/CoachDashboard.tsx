@@ -25,6 +25,8 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import "../styles/calendar.css";
+import { sendBookingAcceptedEmail } from "../utils/email";
+import { sendEventUpdatedEmail } from "../utils/email";
 
 export default function CoachDashboard() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -102,18 +104,25 @@ export default function CoachDashboard() {
   };
 
   const handleSaveEvent = async () => {
-    if (editingEvent?.id)
-      await updateDoc(
-        doc(db, "coaches", uid, "events", editingEvent.id),
-        newEvent
-      );
-    else
+    if (editingEvent?.id) {
+      const prevBookings = editingEvent.bookings || [];
+      await updateDoc(doc(db, "coaches", uid, "events", editingEvent.id), {
+        ...newEvent,
+        time: newEvent.start,
+      });
+      if (prevBookings.length > 0) {
+        await sendEventUpdatedEmail(prevBookings, {
+          ...editingEvent,
+          ...newEvent,
+        });
+      }
+    } else {
       await addDoc(eventsRef, {
         ...newEvent,
         bookings: [] as Booking[],
         time: newEvent.start,
       });
-
+    }
     setNewEvent({ title: "", description: "", time: "", start: "", end: "" });
     setEditingEvent(null);
     setShowModal(false);
@@ -136,6 +145,9 @@ export default function CoachDashboard() {
     await updateDoc(doc(db, "coaches", uid, "events", event.id), {
       bookings: updated,
     });
+    if (status === "accepted") {
+      sendBookingAcceptedEmail(updated[index], event);
+    }
   };
 
   const updateAllBookings = async (
@@ -150,6 +162,9 @@ export default function CoachDashboard() {
 
     if (editingEvent?.id === event.id)
       setEditingEvent({ ...editingEvent, bookings: updated });
+    if (status === "accepted") {
+      sendEventUpdatedEmail(updated, event);
+    }
   };
 
   const calendarEvents: CalendarEvent[] = events.map((e, idx) => ({
@@ -362,15 +377,16 @@ export default function CoachDashboard() {
                   whiteSpace: "normal",
                   overflow: "visible",
                   wordBreak: "break-word",
+                  textAlign: "center",
                 }}
               >
                 <b>{arg.event.title}</b>
                 {arg.event.extendedProps.description && (
-                  <div style={{ fontSize: "0.65rem", color: "#555" }}>
+                  <div style={{ fontSize: "0.65rem", color: "#000000ff" }}>
                     {arg.event.extendedProps.description}
                   </div>
                 )}
-                <div style={{ fontSize: "0.65rem", color: "#333" }}>
+                <div style={{ fontSize: "0.65rem", color: "#000000ff" }}>
                   {startTime.toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",

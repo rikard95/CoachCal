@@ -12,6 +12,17 @@ body {
   overflow-x: hidden;
 }
 
+.fc-daygrid-dot-event {
+  background-color: #007bff !important;
+  color: white !important;
+}
+
+
+.fc-v-event, .fc-h-event {
+    background-color: #007bff !important;
+    border: none !important;
+}
+
 
 .fc-toolbar {
   display: flex;

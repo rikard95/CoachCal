@@ -29,11 +29,16 @@ export default function ClientDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
-  const [filteredCoachEvents, setFilteredCoachEvents] = useState<{ coach: Coach; event: Event | null; }[]>([]);
+  const [filteredCoachEvents, setFilteredCoachEvents] = useState<
+    { coach: Coach; event: Event | null }[]
+  >([]);
   const [currentUserEmail, setCurrentUserEmail] = useState("");
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [feedback, setFeedback] = useState<string>("");
-  const [allBookings, setAllBookings] = useState<{ coachName: string; event: Event }[]>([]);
+  const [resultsDropdownOpen, setResultsDropdownOpen] = useState(false);
+  const [allBookings, setAllBookings] = useState<
+    { coachName: string; event: Event }[]
+  >([]);
 
   const navigate = useNavigate();
   const calendarRef = useRef<FullCalendar>(null);
@@ -53,33 +58,49 @@ export default function ClientDashboard() {
     let eventUnsubs: (() => void)[] = [];
 
     const unsubscribeCoaches = onSnapshot(coachesRef, (coachSnap) => {
-      const all = coachSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Coach);
+      const all = coachSnap.docs.map(
+        (d) => ({ id: d.id, ...d.data() } as Coach)
+      );
       setCoaches(all);
       setFilteredCoachEvents(all.map((coach) => ({ coach, event: null })));
 
       eventUnsubs.forEach((u) => u());
       eventUnsubs = [];
 
-      all.forEach((coach) => {
-        const eventsRef = collection(db, "coaches", coach.id!, "events");
-        const unsub = onSnapshot(eventsRef, (snap) => {
-          const list = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Event));
-          setCoachEvents((prev) => ({ ...prev, [coach.id!]: list }));
+     all.forEach((coach) => {
+  const eventsRef = collection(db, "coaches", coach.id!, "events");
 
-          if (selectedCoach?.id === coach.id) setEvents(list);
+  const unsub = onSnapshot(eventsRef, (snap) => {
+    const list = snap.docs.map(
+      (doc) => ({ id: doc.id, ...doc.data() } as Event)
+    );
 
-          setFilteredCoachEvents((prev) =>
-            prev.map((item) =>
-              item.coach.id === coach.id
-                ? list.length > 0
-                  ? list.map((e) => ({ coach, event: e }))
-                  : [{ coach, event: null }]
-                : item
-            ).flat()
-          );
-        });
-        eventUnsubs.push(unsub);
+    setCoachEvents((prev) => {
+      const updatedCoachEvents = { ...prev, [coach.id!]: list };
+
+      const results: { coach: Coach; event: Event | null }[] = [];
+
+      all.forEach((c) => {
+        const evs = updatedCoachEvents[c.id!] || [];
+        if (evs.length > 0) {
+          evs.forEach((e) => results.push({ coach: c, event: e }));
+        } else {
+          results.push({ coach: c, event: null });
+        }
       });
+
+      setFilteredCoachEvents(results);
+
+      if (selectedCoach?.id === coach.id) {
+        setEvents(list);
+      }
+
+      return updatedCoachEvents;
+    });
+  });
+
+  eventUnsubs.push(unsub);
+});
     });
 
     return () => {
@@ -95,7 +116,10 @@ export default function ClientDashboard() {
       if (!coach) return;
       list.forEach((e) => {
         if (e.bookings?.some((b) => b.clientEmail === currentUserEmail)) {
-          bookings.push({ coachName: coach.companyName || coach.name, event: e });
+          bookings.push({
+            coachName: coach.companyName || coach.name,
+            event: e,
+          });
         }
       });
     });
@@ -137,7 +161,13 @@ export default function ClientDashboard() {
   const handleBook = async () => {
     if (!selectedCoach?.id || !selectedEvent?.id) return;
 
-    const eventDoc = doc(db, "coaches", selectedCoach.id, "events", selectedEvent.id);
+    const eventDoc = doc(
+      db,
+      "coaches",
+      selectedCoach.id,
+      "events",
+      selectedEvent.id
+    );
     const newBooking: Booking = {
       clientEmail: currentUserEmail,
       status: "pending",
@@ -172,13 +202,13 @@ export default function ClientDashboard() {
 
   const jumpToEvent = (event: Event) => {
     setSelectedEvent(event);
-    setShowModal(true);
+    /* setShowModal(true); */
 
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
       if (event.time) {
         calendarApi.gotoDate(new Date(event.time));
-        calendarApi.changeView("timeGridDay");
+        calendarApi.changeView("dayGridMonth");
       }
     }
   };
@@ -188,45 +218,104 @@ export default function ClientDashboard() {
     title: e.title,
     start: e.time,
     end: e.end || undefined,
-    extendedProps: { bookings: e.bookings || [] },
+    extendedProps: { description: e.description || "", bookings: e.bookings || [] },
   }));
 
   return (
     <Container className="mt-4 mb-5">
       <Row className="align-items-center mb-3 justify-content-between">
-        <Col xs={12} md="auto" className="text-center text-md-start mb-2 mb-md-0">
+        <Col
+          xs={12}
+          md="auto"
+          className="text-center text-md-start mb-2 mb-md-0"
+        >
           <h2 className="m-0">Client Dashboard</h2>
         </Col>
 
-        <Col xs={12} md="auto" className="d-flex justify-content-center justify-content-md-end">
+        <Col
+          xs={12}
+          md="auto"
+          className="d-flex justify-content-center justify-content-md-end"
+        >
           <div className="d-flex gap-2 align-items-center flex-wrap justify-content-center">
-            <span className="fw-semibold text-truncate user-email">{currentUserEmail}</span>
-            <Button variant="danger" onClick={handleLogout}>Log out</Button>
+            <span className="fw-semibold text-truncate user-email">
+              {currentUserEmail}
+            </span>
+            <Button variant="danger" onClick={handleLogout}>
+              Log out
+            </Button>
           </div>
         </Col>
       </Row>
 
-      <InputGroup className="mb-4">
-        <Form.Control
-          placeholder="Search by name, company, or event title..."
-          value={search}
-          onChange={handleSearch}
-        />
-      </InputGroup>
 
-      <div className="coach-list-scroll mb-4">
-        {filteredCoachEvents.map(({ coach, event }, idx) => (
-          <Button
-            key={`${coach.id}-${event?.id}-${idx}`}
-            variant={selectedCoach?.id === coach.id ? "primary" : "outline-primary"}
-            onClick={() => handleSelectCoach(coach)}
-            className="flex-shrink-0"
-          >
-            {coach.companyName || coach.name}
-            {event && <> – {event.title}</>}
-          </Button>
-        ))}
+
+      <div className="search-container mb-4 position-relative">
+  <InputGroup>
+    <Form.Control
+      placeholder="Search for coach or specific event..."
+      value={search}
+      onChange={(e) => {
+        handleSearch(e as React.ChangeEvent<HTMLInputElement>);
+        setResultsDropdownOpen(true);
+      }}
+      onFocus={() => setResultsDropdownOpen(true)}
+    />
+    <Button 
+      variant="primary" 
+      onClick={() => setResultsDropdownOpen(!resultsDropdownOpen)}
+      className="d-flex align-items-center"
+    >
+      <span className="me-1">{resultsDropdownOpen ? "Close" : "View All"}</span>
+      <i className={`bi ${resultsDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
+    </Button>
+  </InputGroup>
+
+  {resultsDropdownOpen && (
+  <div className="search-results-dropdown shadow-lg border rounded bg-white">
+    {filteredCoachEvents.length > 0 ? (
+      <div className="list-group list-group-flush">
+        {filteredCoachEvents.map(({ coach, event }, idx) => {
+          const booking = event?.bookings?.find(
+            (b) => b.clientEmail === currentUserEmail
+          );
+          const status = booking?.status || "default";
+
+          return (
+            <button
+              key={`${coach.id}-${event?.id}-${idx}`}
+              type="button"
+              className="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3"
+              onClick={() => {
+                handleSelectCoach(coach);
+                if (event) jumpToEvent(event);
+                setResultsDropdownOpen(false);
+              }}
+            >
+              <div className="text-start">
+                <div className="fw-bold text-dark">{coach.companyName || coach.name}</div>
+                {event && (
+                  <div className="small mt-1">
+                    <span className={`badge badge-status-${status} me-1`}>
+                      {status === "default" ? "Available" : status.charAt(0).toUpperCase() + status.slice(1)}
+                    </span>
+                    <span className="text-muted">{event.title}</span>
+                  </div>
+                )}
+              </div>
+              <i className="bi bi-chevron-right text-muted"></i>
+            </button>
+          );
+        })}
       </div>
+    ) : (
+      <div className="p-4 text-center text-muted italic">
+        No results match your search...
+      </div>
+    )}
+  </div>
+)}
+</div>
 
       {feedback && <Alert variant="info">{feedback}</Alert>}
 
@@ -244,7 +333,9 @@ export default function ClientDashboard() {
             events={calendarEvents}
             height="auto"
             eventClick={(info) => {
-              const eventData = events.find((e) => e.id === info.event.id.split("-")[0]);
+              const eventData = events.find(
+                (e) => e.id === info.event.id.split("-")[0]
+              );
               if (eventData) {
                 setSelectedEvent(eventData);
                 setShowModal(true);
@@ -262,7 +353,7 @@ export default function ClientDashboard() {
               const viewClass = `view-${arg.view.type}`;
 
               return (
-                <div className={`event-item event-${status} ${viewClass}`}>          
+                <div className={`event-item event-${status} ${viewClass}`}>
                   <span className="event-title">{arg.event.title}</span>
                   <span className="event-time">
                     {new Date(arg.event.start!).toLocaleTimeString([], {
@@ -298,13 +389,14 @@ export default function ClientDashboard() {
                   <div>
                     <strong>{event.title}</strong> with <em>{coachName}</em>
                     <div className="text-muted booking-time">
-                      {event.time && new Date(event.time).toLocaleString([], {
-                        weekday: "short",
-                        month: "short",
-                        day: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
+                      {event.time &&
+                        new Date(event.time).toLocaleString([], {
+                          weekday: "short",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       {event.end &&
                         ` – ${new Date(event.end).toLocaleTimeString([], {
                           hour: "2-digit",
@@ -330,7 +422,12 @@ export default function ClientDashboard() {
         </div>
       )}
 
-      <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
+      <Modal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        centered
+        size="lg"
+      >
         <Modal.Header closeButton>
           <Modal.Title className="fw-semibold">
             {selectedEvent?.title}
@@ -340,6 +437,23 @@ export default function ClientDashboard() {
           {selectedEvent && (
             <>
               <p>{selectedEvent.description}</p>
+              {selectedEvent.time && (
+                <p className="mb-3">
+                  <strong>Time:</strong>{" "}
+                  {new Date(selectedEvent.time).toLocaleString([], {
+                    weekday: "short",
+                    month: "short",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                  {selectedEvent.end &&
+                    ` – ${new Date(selectedEvent.end).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`}
+                </p>
+              )}
 
               {selectedEvent.bookings?.some(
                 (b) => b.clientEmail === currentUserEmail
@@ -347,9 +461,11 @@ export default function ClientDashboard() {
                 <>
                   <div className="mb-2">
                     <strong>Status:</strong>{" "}
-                    {selectedEvent.bookings.find(
-                      (b) => b.clientEmail === currentUserEmail
-                    )?.status}
+                    {
+                      selectedEvent.bookings.find(
+                        (b) => b.clientEmail === currentUserEmail
+                      )?.status
+                    }
                   </div>
                   <Button
                     variant="outline-warning"
