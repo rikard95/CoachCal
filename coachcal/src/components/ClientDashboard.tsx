@@ -20,6 +20,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import "../styles/clientdashboard.css";
+import DeleteAccount from "./DeleteAccount";
 
 export default function ClientDashboard() {
   const [coaches, setCoaches] = useState<Coach[]>([]);
@@ -67,40 +68,40 @@ export default function ClientDashboard() {
       eventUnsubs.forEach((u) => u());
       eventUnsubs = [];
 
-     all.forEach((coach) => {
-  const eventsRef = collection(db, "coaches", coach.id!, "events");
+      all.forEach((coach) => {
+        const eventsRef = collection(db, "coaches", coach.id!, "events");
 
-  const unsub = onSnapshot(eventsRef, (snap) => {
-    const list = snap.docs.map(
-      (doc) => ({ id: doc.id, ...doc.data() } as Event)
-    );
+        const unsub = onSnapshot(eventsRef, (snap) => {
+          const list = snap.docs.map(
+            (doc) => ({ id: doc.id, ...doc.data() } as Event)
+          );
 
-    setCoachEvents((prev) => {
-      const updatedCoachEvents = { ...prev, [coach.id!]: list };
+          setCoachEvents((prev) => {
+            const updatedCoachEvents = { ...prev, [coach.id!]: list };
 
-      const results: { coach: Coach; event: Event | null }[] = [];
+            const results: { coach: Coach; event: Event | null }[] = [];
 
-      all.forEach((c) => {
-        const evs = updatedCoachEvents[c.id!] || [];
-        if (evs.length > 0) {
-          evs.forEach((e) => results.push({ coach: c, event: e }));
-        } else {
-          results.push({ coach: c, event: null });
-        }
+            all.forEach((c) => {
+              const evs = updatedCoachEvents[c.id!] || [];
+              if (evs.length > 0) {
+                evs.forEach((e) => results.push({ coach: c, event: e }));
+              } else {
+                results.push({ coach: c, event: null });
+              }
+            });
+
+            setFilteredCoachEvents(results);
+
+            if (selectedCoach?.id === coach.id) {
+              setEvents(list);
+            }
+
+            return updatedCoachEvents;
+          });
+        });
+
+        eventUnsubs.push(unsub);
       });
-
-      setFilteredCoachEvents(results);
-
-      if (selectedCoach?.id === coach.id) {
-        setEvents(list);
-      }
-
-      return updatedCoachEvents;
-    });
-  });
-
-  eventUnsubs.push(unsub);
-});
     });
 
     return () => {
@@ -117,7 +118,7 @@ export default function ClientDashboard() {
       list.forEach((e) => {
         if (e.bookings?.some((b) => b.clientEmail === currentUserEmail)) {
           bookings.push({
-            coachName: coach.companyName || coach.name,
+            coachName: coach.companyName ? coach.companyName : coach.name,
             event: e,
           });
         }
@@ -181,8 +182,8 @@ export default function ClientDashboard() {
 
     setShowModal(false);
     setMessage("");
-    setFeedback("You are now booked for this session!");
-    setTimeout(() => setFeedback(""), 3000);
+    setFeedback("Booking request sent. waiting for confirmation.");
+    setTimeout(() => setFeedback(""), 5000);
   };
 
   const handleCancelBooking = async (event: Event) => {
@@ -197,7 +198,7 @@ export default function ClientDashboard() {
 
     setShowModal(false);
     setFeedback("Booking cancelled.");
-    setTimeout(() => setFeedback(""), 3000);
+    setTimeout(() => setFeedback(""), 5000);
   };
 
   const jumpToEvent = (event: Event) => {
@@ -218,7 +219,10 @@ export default function ClientDashboard() {
     title: e.title,
     start: e.time,
     end: e.end || undefined,
-    extendedProps: { description: e.description || "", bookings: e.bookings || [] },
+    extendedProps: {
+      description: e.description || "",
+      bookings: e.bookings || [],
+    },
   }));
 
   return (
@@ -241,83 +245,100 @@ export default function ClientDashboard() {
             <span className="fw-semibold text-truncate user-email">
               {currentUserEmail}
             </span>
-            <Button variant="danger" onClick={handleLogout}>
+            <Button variant="warning" onClick={handleLogout}>
               Log out
             </Button>
+            <DeleteAccount />
           </div>
         </Col>
       </Row>
 
-
-
       <div className="search-container mb-4 position-relative">
-  <InputGroup>
-    <Form.Control
-      placeholder="Search for coach or specific event..."
-      value={search}
-      onChange={(e) => {
-        handleSearch(e as React.ChangeEvent<HTMLInputElement>);
-        setResultsDropdownOpen(true);
-      }}
-      onFocus={() => setResultsDropdownOpen(true)}
-    />
-    <Button 
-      variant="primary" 
-      onClick={() => setResultsDropdownOpen(!resultsDropdownOpen)}
-      className="d-flex align-items-center"
-    >
-      <span className="me-1">{resultsDropdownOpen ? "Close" : "View All"}</span>
-      <i className={`bi ${resultsDropdownOpen ? 'bi-chevron-up' : 'bi-chevron-down'}`}></i>
-    </Button>
-  </InputGroup>
+        <InputGroup>
+          <Form.Control
+            placeholder="Search for coach or specific event..."
+            value={search}
+            onChange={(e) => {
+              handleSearch(e as React.ChangeEvent<HTMLInputElement>);
+              setResultsDropdownOpen(true);
+            }}
+            onFocus={() => setResultsDropdownOpen(true)}
+          />
+          <Button
+            variant="primary"
+            onClick={() => setResultsDropdownOpen(!resultsDropdownOpen)}
+            className="d-flex align-items-center"
+          >
+            <span className="me-1">
+              {resultsDropdownOpen ? "Close" : "View All"}
+            </span>
+            <i
+              className={`bi ${
+                resultsDropdownOpen ? "bi-chevron-up" : "bi-chevron-down"
+              }`}
+            ></i>
+          </Button>
+        </InputGroup>
 
-  {resultsDropdownOpen && (
-  <div className="search-results-dropdown shadow-lg border rounded bg-white">
-    {filteredCoachEvents.length > 0 ? (
-      <div className="list-group list-group-flush">
-        {filteredCoachEvents.map(({ coach, event }, idx) => {
-          const booking = event?.bookings?.find(
-            (b) => b.clientEmail === currentUserEmail
-          );
-          const status = booking?.status || "default";
+        {resultsDropdownOpen && (
+          <div className="search-results-dropdown shadow-lg border rounded bg-white">
+            {filteredCoachEvents.length > 0 ? (
+              <div className="list-group list-group-flush">
+                {filteredCoachEvents.map(({ coach, event }, idx) => {
+                  const booking = event?.bookings?.find(
+                    (b) => b.clientEmail === currentUserEmail
+                  );
+                  const status = booking?.status || "default";
 
-          return (
-            <button
-              key={`${coach.id}-${event?.id}-${idx}`}
-              type="button"
-              className="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3"
-              onClick={() => {
-                handleSelectCoach(coach);
-                if (event) jumpToEvent(event);
-                setResultsDropdownOpen(false);
-              }}
-            >
-              <div className="text-start">
-                <div className="fw-bold text-dark">{coach.companyName || coach.name}</div>
-                {event && (
-                  <div className="small mt-1">
-                    <span className={`badge badge-status-${status} me-1`}>
-                      {status === "default" ? "Available" : status.charAt(0).toUpperCase() + status.slice(1)}
-                    </span>
-                    <span className="text-muted">{event.title}</span>
-                  </div>
-                )}
+                  return (
+                    <button
+                      key={`${coach.id}-${event?.id}-${idx}`}
+                      type="button"
+                      className="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3"
+                      onClick={() => {
+                        handleSelectCoach(coach);
+                        if (event) jumpToEvent(event);
+                        setResultsDropdownOpen(false);
+                      }}
+                    >
+                      <div className="text-start">
+                        <div className="fw-bold text-dark">
+                          {(() => {
+                            console.log("Coach objekt i render:", coach);
+                            return (
+                              coach.companyName || coach.name || "Name is missing"
+                            );
+                          })()}
+                        </div>
+                        {event && (
+                          <div className="small mt-1">
+                            <span
+                              className={`badge badge-status-${status} me-1`}
+                            >
+                              {status === "default"
+                                ? "Available"
+                                : status.charAt(0).toUpperCase() +
+                                  status.slice(1)}
+                            </span>
+                            <span className="text-muted">{event.title}</span>
+                          </div>
+                        )}
+                      </div>
+                      <i className="bi bi-chevron-right text-muted"></i>
+                    </button>
+                  );
+                })}
               </div>
-              <i className="bi bi-chevron-right text-muted"></i>
-            </button>
-          );
-        })}
+            ) : (
+              <div className="p-4 text-center text-muted italic">
+                No results match your search...
+              </div>
+            )}
+          </div>
+        )}
       </div>
-    ) : (
-      <div className="p-4 text-center text-muted italic">
-        No results match your search...
-      </div>
-    )}
-  </div>
-)}
-</div>
 
-      {feedback && <Alert variant="info">{feedback}</Alert>}
+      
 
       {selectedCoach ? (
         <div className="coach-calendar-wrapper mb-4">
@@ -365,10 +386,12 @@ export default function ClientDashboard() {
               );
             }}
           />
+          {feedback && <Alert variant="info">{feedback}</Alert>}
         </div>
+        
       ) : (
         <div className="text-center text-muted py-5">
-          <p className="fs-5">Choose a coach to see available sessions.</p>
+          <p className="fs-5">Search a coach to see available sessions.</p>
         </div>
       )}
 

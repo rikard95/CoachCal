@@ -35,8 +35,8 @@ export default function LandingPage() {
                 <Card.Body>
                   <Card.Title>For Coaches</Card.Title>
                   <Card.Text>
-                    Create available times, manage bookings, and get notified by
-                    email.
+                    Create available times, manage bookings, and send email
+                    confirmations.
                   </Card.Text>
                 </Card.Body>
               </Card>

@@ -8,6 +8,7 @@ import {
   updateDoc,
   deleteDoc,
 } from "firebase/firestore";
+import DeleteAccount from "./DeleteAccount";
 import {
   Container,
   Button,
@@ -212,9 +213,10 @@ export default function CoachDashboard() {
             >
               {auth.currentUser?.email || "No user"}
             </span>
-            <Button variant="danger" onClick={handleLogout}>
+            <Button variant="warning" onClick={handleLogout}>
               Log out
             </Button>
+            <DeleteAccount />
           </div>
         </Col>
       </Row>

@@ -47,6 +47,7 @@ export default function SignUp() {
       if (form.role === "coach") {
         await setDoc(doc(db, "coaches", uid), {
           name: `${form.firstName} ${form.lastName}`,
+          companyName: form.companyName,
           followers: [],
         });
       }
@@ -65,6 +66,13 @@ export default function SignUp() {
 
   return (
     <Container className="mt-5" style={{ maxWidth: "500px" }}>
+       <Button
+              variant="secondary"
+              className="mb-3"
+              onClick={() => navigate("/")}
+            >
+              Tillbaka
+            </Button>
       <h2>Sign Up</h2>
       <Form onSubmit={handleSubmit}>
         <Form.Group className="mb-3">
@@ -114,13 +122,27 @@ export default function SignUp() {
             required
           />
         </Form.Group>
+         
         <Form.Group className="mb-3">
-          <Form.Label>Role</Form.Label>
-          <Form.Select name="role" value={form.role} onChange={handleChange}>
-            <option value="client">Client</option>
-            <option value="coach">Coach</option>
-          </Form.Select>
-        </Form.Group>
+  <Form.Label>Role</Form.Label>
+  <Form.Select name="role" value={form.role} onChange={handleChange}>
+    <option value="client">Client</option>
+    <option value="coach">Coach</option>
+  </Form.Select>
+</Form.Group>
+
+{form.role === 'coach' && (
+  <Form.Group className="mb-3">
+    <Form.Label>Company name</Form.Label>
+    <Form.Control
+      name="companyName"
+      type="text"
+      value={form.companyName}
+      onChange={handleChange}
+      required
+    />
+  </Form.Group>
+)}
         <Button type="submit">Sign Up</Button>
       </Form>
       {error && (

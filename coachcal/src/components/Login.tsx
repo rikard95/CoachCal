@@ -40,7 +40,7 @@ export default function Login() {
         className="mb-3"
         onClick={() => navigate("/")}
       >
-        ← Tillbaka
+        Tillbaka
       </Button>
 
       <h2>Login</h2>
