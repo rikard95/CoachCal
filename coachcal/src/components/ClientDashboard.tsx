@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { db, auth } from "../firebase";
-import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { auth } from "../firebase";
 import {
   Container,
   Button,
@@ -21,6 +20,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import "../styles/clientdashboard.css";
 import DeleteAccount from "./DeleteAccount";
+import { clientDashboardService } from "./../services/clientDashboardService";
 
 export default function ClientDashboard() {
   const [coaches, setCoaches] = useState<Coach[]>([]);
@@ -55,54 +55,45 @@ export default function ClientDashboard() {
   };
 
   useEffect(() => {
-    const coachesRef = collection(db, "coaches");
     let eventUnsubs: (() => void)[] = [];
 
-    const unsubscribeCoaches = onSnapshot(coachesRef, (coachSnap) => {
-      const all = coachSnap.docs.map(
-        (d) => ({ id: d.id, ...d.data() } as Coach)
-      );
-      setCoaches(all);
-      setFilteredCoachEvents(all.map((coach) => ({ coach, event: null })));
+    const unsubscribeCoaches = clientDashboardService.subscribeToCoaches(
+      (all) => {
+        setCoaches(all);
+        setFilteredCoachEvents(all.map((coach) => ({ coach, event: null })));
 
-      eventUnsubs.forEach((u) => u());
-      eventUnsubs = [];
+        eventUnsubs.forEach((u) => u());
+        eventUnsubs = [];
 
-      all.forEach((coach) => {
-        const eventsRef = collection(db, "coaches", coach.id!, "events");
+        all.forEach((coach) => {
+          const unsub = clientDashboardService.subscribeToCoachEvents(
+            coach.id!,
+            (list) => {
+              setCoachEvents((prev) => {
+                const updatedCoachEvents = { ...prev, [coach.id!]: list };
+                const results: { coach: Coach; event: Event | null }[] = [];
 
-        const unsub = onSnapshot(eventsRef, (snap) => {
-          const list = snap.docs.map(
-            (doc) => ({ id: doc.id, ...doc.data() } as Event)
-          );
+                all.forEach((c) => {
+                  const evs = updatedCoachEvents[c.id!] || [];
+                  if (evs.length > 0) {
+                    evs.forEach((e) => results.push({ coach: c, event: e }));
+                  } else {
+                    results.push({ coach: c, event: null });
+                  }
+                });
 
-          setCoachEvents((prev) => {
-            const updatedCoachEvents = { ...prev, [coach.id!]: list };
-
-            const results: { coach: Coach; event: Event | null }[] = [];
-
-            all.forEach((c) => {
-              const evs = updatedCoachEvents[c.id!] || [];
-              if (evs.length > 0) {
-                evs.forEach((e) => results.push({ coach: c, event: e }));
-              } else {
-                results.push({ coach: c, event: null });
-              }
-            });
-
-            setFilteredCoachEvents(results);
-
-            if (selectedCoach?.id === coach.id) {
-              setEvents(list);
+                setFilteredCoachEvents(results);
+                if (selectedCoach?.id === coach.id) {
+                  setEvents(list);
+                }
+                return updatedCoachEvents;
+              });
             }
-
-            return updatedCoachEvents;
-          });
+          );
+          eventUnsubs.push(unsub);
         });
-
-        eventUnsubs.push(unsub);
-      });
-    });
+      }
+    );
 
     return () => {
       unsubscribeCoaches();
@@ -162,13 +153,6 @@ export default function ClientDashboard() {
   const handleBook = async () => {
     if (!selectedCoach?.id || !selectedEvent?.id) return;
 
-    const eventDoc = doc(
-      db,
-      "coaches",
-      selectedCoach.id,
-      "events",
-      selectedEvent.id
-    );
     const newBooking: Booking = {
       clientEmail: currentUserEmail,
       status: "pending",
@@ -176,9 +160,12 @@ export default function ClientDashboard() {
       clientName: "",
     };
 
-    await updateDoc(eventDoc, {
-      bookings: [...(selectedEvent.bookings || []), newBooking],
-    });
+    const updatedBookings = [...(selectedEvent.bookings || []), newBooking];
+    await clientDashboardService.updateEventBookings(
+      selectedCoach.id,
+      selectedEvent.id,
+      updatedBookings
+    );
 
     setShowModal(false);
     setMessage("");
@@ -189,12 +176,15 @@ export default function ClientDashboard() {
   const handleCancelBooking = async (event: Event) => {
     if (!selectedCoach?.id || !event.id) return;
 
-    const eventDoc = doc(db, "coaches", selectedCoach.id, "events", event.id);
     const updated = (event.bookings || []).filter(
       (b) => b.clientEmail !== currentUserEmail
     );
 
-    await updateDoc(eventDoc, { bookings: updated });
+    await clientDashboardService.updateEventBookings(
+      selectedCoach.id,
+      event.id,
+      updated
+    );
 
     setShowModal(false);
     setFeedback("Booking cancelled.");
@@ -203,8 +193,6 @@ export default function ClientDashboard() {
 
   const jumpToEvent = (event: Event) => {
     setSelectedEvent(event);
-    /* setShowModal(true); */
-
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
       if (event.time) {
@@ -235,7 +223,6 @@ export default function ClientDashboard() {
         >
           <h2 className="m-0">Client Dashboard</h2>
         </Col>
-
         <Col
           xs={12}
           md="auto"
@@ -303,12 +290,7 @@ export default function ClientDashboard() {
                     >
                       <div className="text-start">
                         <div className="fw-bold text-dark">
-                          {(() => {
-                            console.log("Coach objekt i render:", coach);
-                            return (
-                              coach.companyName || coach.name || "Name is missing"
-                            );
-                          })()}
+                          {coach.companyName || coach.name || "Name is missing"}
                         </div>
                         {event && (
                           <div className="small mt-1">
@@ -337,8 +319,6 @@ export default function ClientDashboard() {
           </div>
         )}
       </div>
-
-      
 
       {selectedCoach ? (
         <div className="coach-calendar-wrapper mb-4">
@@ -369,10 +349,8 @@ export default function ClientDashboard() {
               const booking = arg.event.extendedProps.bookings?.find(
                 (b: Booking) => b.clientEmail === currentUserEmail
               );
-
               const status = booking?.status || "default";
               const viewClass = `view-${arg.view.type}`;
-
               return (
                 <div className={`event-item event-${status} ${viewClass}`}>
                   <span className="event-title">{arg.event.title}</span>
@@ -388,7 +366,6 @@ export default function ClientDashboard() {
           />
           {feedback && <Alert variant="info">{feedback}</Alert>}
         </div>
-        
       ) : (
         <div className="text-center text-muted py-5">
           <p className="fs-5">Search a coach to see available sessions.</p>

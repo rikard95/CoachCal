@@ -1,13 +1,5 @@
 import { useEffect, useState } from "react";
-import { db, auth } from "../firebase";
-import {
-  collection,
-  addDoc,
-  onSnapshot,
-  doc,
-  updateDoc,
-  deleteDoc,
-} from "firebase/firestore";
+import { auth } from "../firebase";
 import DeleteAccount from "./DeleteAccount";
 import {
   Container,
@@ -28,6 +20,7 @@ import interactionPlugin from "@fullcalendar/interaction";
 import "../styles/calendar.css";
 import { sendBookingAcceptedEmail } from "../utils/email";
 import { sendEventUpdatedEmail } from "../utils/email";
+import { coachDashboardService } from "../services/coachDashboardService";
 
 export default function CoachDashboard() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -47,35 +40,33 @@ export default function CoachDashboard() {
 
   const navigate = useNavigate();
   const uid = auth.currentUser!.uid;
-  const eventsRef = collection(db, "coaches", uid, "events");
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(eventsRef, (snapshot) => {
-      const eventData = snapshot.docs.map(
-        (doc) => ({ id: doc.id, ...doc.data() } as Event)
-      );
-      setEvents(eventData);
-
-      const bookings: { event: Event; booking: Booking }[] = [];
-      eventData.forEach((e) =>
-        e.bookings?.forEach((b) => bookings.push({ event: e, booking: b }))
-      );
-      setAllBookings(bookings);
-    });
+    const unsubscribe = coachDashboardService.subscribeToEvents(
+      uid,
+      (eventData) => {
+        setEvents(eventData);
+        const bookings: { event: Event; booking: Booking }[] = [];
+        eventData.forEach((e) =>
+          e.bookings?.forEach((b) => bookings.push({ event: e, booking: b }))
+        );
+        setAllBookings(bookings);
+      }
+    );
     return () => unsubscribe();
-  }, []);
+  }, [uid]);
 
   useEffect(() => {
     if (!editingEvent?.id) return;
-    const unsub = onSnapshot(
-      doc(db, "coaches", uid, "events", editingEvent.id),
-      (snap) => {
-        if (snap.exists())
-          setEditingEvent({ id: snap.id, ...snap.data() } as Event);
+    const unsub = coachDashboardService.subscribeToSingleEvent(
+      uid,
+      editingEvent.id,
+      (updatedEvent) => {
+        setEditingEvent(updatedEvent);
       }
     );
     return () => unsub();
-  }, [editingEvent]);
+  }, [editingEvent?.id, uid]);
 
   const handleLogout = async () => {
     await signOut(auth);
@@ -107,10 +98,7 @@ export default function CoachDashboard() {
   const handleSaveEvent = async () => {
     if (editingEvent?.id) {
       const prevBookings = editingEvent.bookings || [];
-      await updateDoc(doc(db, "coaches", uid, "events", editingEvent.id), {
-        ...newEvent,
-        time: newEvent.start,
-      });
+      await coachDashboardService.updateEvent(uid, editingEvent.id, newEvent);
       if (prevBookings.length > 0) {
         await sendEventUpdatedEmail(prevBookings, {
           ...editingEvent,
@@ -118,11 +106,7 @@ export default function CoachDashboard() {
         });
       }
     } else {
-      await addDoc(eventsRef, {
-        ...newEvent,
-        bookings: [] as Booking[],
-        time: newEvent.start,
-      });
+      await coachDashboardService.addEvent(uid, newEvent);
     }
     setNewEvent({ title: "", description: "", time: "", start: "", end: "" });
     setEditingEvent(null);
@@ -131,7 +115,7 @@ export default function CoachDashboard() {
 
   const handleDeleteEvent = async (event: Event) => {
     if (!event.id) return;
-    await deleteDoc(doc(db, "coaches", uid, "events", event.id));
+    await coachDashboardService.deleteEvent(uid, event.id);
     setShowModal(false);
   };
 
@@ -143,9 +127,7 @@ export default function CoachDashboard() {
     if (!event.id || !event.bookings) return;
     const updated = [...event.bookings];
     updated[index].status = status;
-    await updateDoc(doc(db, "coaches", uid, "events", event.id), {
-      bookings: updated,
-    });
+    await coachDashboardService.updateBookings(uid, event.id, updated);
     if (status === "accepted") {
       sendBookingAcceptedEmail(updated[index], event);
     }
@@ -157,9 +139,7 @@ export default function CoachDashboard() {
   ) => {
     if (!event.id || !event.bookings) return;
     const updated = event.bookings.map((b) => ({ ...b, status }));
-    await updateDoc(doc(db, "coaches", uid, "events", event.id), {
-      bookings: updated,
-    });
+    await coachDashboardService.updateBookings(uid, event.id, updated);
 
     if (editingEvent?.id === event.id)
       setEditingEvent({ ...editingEvent, bookings: updated });
