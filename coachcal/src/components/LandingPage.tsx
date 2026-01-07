@@ -1,5 +1,58 @@
 import { useNavigate } from "react-router-dom";
 import { Container, Row, Col, Card, Button } from "react-bootstrap";
+import { Carousel } from "react-bootstrap";
+import bild1 from '../img/bild-1.png';
+import bild3 from '../img/bild-3.png';
+import bild4 from '../img/bild-4.png';
+
+const MyCarousel = () => {
+  return (
+    <Carousel variant="light" fade>
+      <Carousel.Item style={{ height: "400px" }}>
+        <img
+          className="d-block w-100 h-100"
+          style={{ objectFit: "cover" }}
+          src={bild1}
+          alt="Schedule"
+        />
+        <Carousel.Caption className="bg-dark bg-opacity-55 rounded">
+          <h2>Schedule Effortlessly</h2>
+          <p>Find a time that works for you and your coach.</p>
+        </Carousel.Caption>
+      </Carousel.Item>
+
+      <Carousel.Item style={{ height: "400px" }}>
+        <img
+          className="d-block w-100 h-100"
+          style={{ objectFit: "cover",
+            objectPosition: "bottom"
+           }}
+          src={bild4}
+          alt="Manage"
+        />
+        <Carousel.Caption className="bg-dark bg-opacity-55 rounded">
+          <h2>Manage Clients</h2>
+          <p>Keep track of all your appointments in one place.</p>
+        </Carousel.Caption>
+      </Carousel.Item>
+
+      <Carousel.Item style={{ height: "400px" }}>
+        <img
+          className="d-block w-100 h-100"
+          style={{ objectFit: "cover",
+            objectPosition: "bottom"
+           }}
+          src={bild3}
+          alt="Grow"
+        />
+        <Carousel.Caption className="bg-dark bg-opacity-55 rounded">
+          <h2>Grow with CoachCal</h2>
+          <p>The ultimate tool for coaches.</p>
+        </Carousel.Caption>
+      </Carousel.Item>
+    </Carousel>
+  );
+};
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -66,6 +119,8 @@ export default function LandingPage() {
           </Row>
         </Container>
       </section>
+
+      <MyCarousel />
 
       <section className="bg-light py-5 text-center">
         <Container>
