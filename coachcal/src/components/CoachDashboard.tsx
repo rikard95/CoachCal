@@ -457,7 +457,7 @@ export default function CoachDashboard() {
             </div>
           </Form>
 
-          {editingEvent?.bookings?.length && (
+          {editingEvent?.bookings && editingEvent.bookings.length > 0 && (
             <div className="mt-4">
               <h6>Bookings:</h6>
               {editingEvent.bookings.map((b, i) => (
