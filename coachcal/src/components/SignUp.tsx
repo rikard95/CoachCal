@@ -42,13 +42,14 @@ export default function SignUp() {
         form.password!
       );
       const uid = userCredential.user.uid;
-      await setDoc(doc(db, "users", uid), form);
+
+    const {password, ...userDataToSave} = form;
+      await setDoc(doc(db, "users", uid), userDataToSave);
 
       if (form.role === "coach") {
         await setDoc(doc(db, "coaches", uid), {
           name: `${form.firstName} ${form.lastName}`,
           companyName: form.companyName,
-          /* followers: [], */
         });
       }
 

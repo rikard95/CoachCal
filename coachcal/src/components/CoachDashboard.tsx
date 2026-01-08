@@ -369,12 +369,12 @@ export default function CoachDashboard() {
                   </div>
                 )}
                 <div style={{ fontSize: "0.65rem", color: "#000000ff" }}>
-                  {startTime.toLocaleTimeString([], {
+                  {startTime.toLocaleTimeString("en-US", {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
                   {endTime
-                    ? ` – ${endTime.toLocaleTimeString([], {
+                    ? ` – ${endTime.toLocaleTimeString("en-US", {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}`

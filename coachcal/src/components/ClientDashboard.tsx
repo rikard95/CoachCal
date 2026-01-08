@@ -192,14 +192,27 @@ export default function ClientDashboard() {
   };
 
   const jumpToEvent = (event: Event) => {
-    setSelectedEvent(event);
-    if (calendarRef.current) {
-      const calendarApi = calendarRef.current.getApi();
-      if (event.time) {
-        calendarApi.gotoDate(new Date(event.time));
-        calendarApi.changeView("dayGridMonth");
-      }
+    const coachOwner = coaches.find((c) =>
+      coachEvents[c.id!]?.some((e) => e.id === event.id)
+    );
+
+    if (coachOwner) {
+      setSelectedCoach(coachOwner);
+      setEvents(coachEvents[coachOwner.id!] ?? []);
     }
+
+    setSelectedEvent(event);
+    setShowModal(true);
+
+    setTimeout(() => {
+      if (calendarRef.current) {
+        const calendarApi = calendarRef.current.getApi();
+        if (event.time) {
+          calendarApi.gotoDate(new Date(event.time));
+          calendarApi.changeView("dayGridMonth");
+        }
+      }
+    }, 100);
   };
 
   const calendarEvents: CalendarEvent[] = events.map((e, idx) => ({
@@ -368,7 +381,7 @@ export default function ClientDashboard() {
         </div>
       ) : (
         <div className="text-center text-muted py-5">
-          <p className="fs-5">Search a coach to see available sessions.</p>
+          <p className="fs-5">Search for a coach to see available sessions.</p>
         </div>
       )}
 
@@ -390,7 +403,7 @@ export default function ClientDashboard() {
                     <strong>{event.title}</strong> with <em>{coachName}</em>
                     <div className="text-muted booking-time">
                       {event.time &&
-                        new Date(event.time).toLocaleString([], {
+                        new Date(event.time).toLocaleString("en-US", {
                           weekday: "short",
                           month: "short",
                           day: "numeric",
@@ -440,7 +453,7 @@ export default function ClientDashboard() {
               {selectedEvent.time && (
                 <p className="mb-3">
                   <strong>Time:</strong>{" "}
-                  {new Date(selectedEvent.time).toLocaleString([], {
+                  {new Date(selectedEvent.time).toLocaleString("en-US", {
                     weekday: "short",
                     month: "short",
                     day: "numeric",
@@ -448,10 +461,13 @@ export default function ClientDashboard() {
                     minute: "2-digit",
                   })}
                   {selectedEvent.end &&
-                    ` – ${new Date(selectedEvent.end).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}`}
+                    ` – ${new Date(selectedEvent.end).toLocaleTimeString(
+                      "en-US",
+                      {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )}`}
                 </p>
               )}
 
