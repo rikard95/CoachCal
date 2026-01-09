@@ -1,5 +1,12 @@
 import { db } from "../firebase";
-import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { 
+  collection, 
+  doc, 
+  onSnapshot, 
+  updateDoc, 
+  arrayUnion, 
+  arrayRemove 
+} from "firebase/firestore";
 import type { Coach, Event, Booking } from "../types";
 
 export const clientDashboardService = {
@@ -16,6 +23,20 @@ export const clientDashboardService = {
     return onSnapshot(eventsRef, (snap) => {
       const list = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Event));
       callback(list);
+    });
+  },
+
+  addBooking: async (coachId: string, eventId: string, newBooking: Booking) => {
+    const eventDoc = doc(db, "coaches", coachId, "events", eventId);
+    return await updateDoc(eventDoc, {
+      bookings: arrayUnion(newBooking)
+    });
+  },
+
+  removeBooking: async (coachId: string, eventId: string, bookingToRemove: Booking) => {
+    const eventDoc = doc(db, "coaches", coachId, "events", eventId);
+    return await updateDoc(eventDoc, {
+      bookings: arrayRemove(bookingToRemove)
     });
   },
 

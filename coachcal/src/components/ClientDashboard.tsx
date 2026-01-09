@@ -160,11 +160,10 @@ export default function ClientDashboard() {
       clientName: "",
     };
 
-    const updatedBookings = [...(selectedEvent.bookings || []), newBooking];
-    await clientDashboardService.updateEventBookings(
+    await clientDashboardService.addBooking(
       selectedCoach.id,
       selectedEvent.id,
-      updatedBookings
+      newBooking
     );
 
     setShowModal(false);
@@ -176,19 +175,20 @@ export default function ClientDashboard() {
   const handleCancelBooking = async (event: Event) => {
     if (!selectedCoach?.id || !event.id) return;
 
-    const updated = (event.bookings || []).filter(
-      (b) => b.clientEmail !== currentUserEmail
+    const myBooking = event.bookings?.find(
+      (b) => b.clientEmail === currentUserEmail
     );
 
-    await clientDashboardService.updateEventBookings(
-      selectedCoach.id,
-      event.id,
-      updated
-    );
-
-    setShowModal(false);
-    setFeedback("Booking cancelled.");
-    setTimeout(() => setFeedback(""), 5000);
+    if (myBooking) {
+      await clientDashboardService.removeBooking(
+        selectedCoach.id,
+        event.id,
+        myBooking
+      );
+      setShowModal(false);
+      setFeedback("Booking cancelled.");
+      setTimeout(() => setFeedback(""), 5000);
+    }
   };
 
   const jumpToEvent = (event: Event) => {
