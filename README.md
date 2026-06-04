@@ -1,0 +1,2 @@
+<img width="1884" height="898" alt="image" src="https://github.com/user-attachments/assets/2b03f004-eb4c-495f-9f09-7596d493ca4e" />
+CoachCal is a web-based coaching platform designed to help coaches and trainers manage their clients, bookings, and training schedules in one place. It simplifies the workflow by providing an organized system for tracking sessions, planning programs, and following client progress.
